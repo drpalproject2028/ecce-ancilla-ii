@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mintar — Ecce Ancilla II</title>
+<style>
+  body {
+    background: #060505;
+    color: #ece5e2;
+    font-family: 'JetBrains Mono', 'SF Mono', 'Courier New', monospace;
+    max-width: 640px;
+    margin: 4rem auto;
+    padding: 0 1.5rem;
+    line-height: 1.6;
+  }
+  h1 { font-size: 1.2rem; color: #d94a68; }
+  button {
+    background: #8b2942;
+    color: #ece5e2;
+    border: none;
+    padding: 0.8rem 1.4rem;
+    font-family: inherit;
+    font-size: 0.95rem;
+    cursor: pointer;
+    margin-top: 1rem;
+  }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button:hover:not(:disabled) { background: #d94a68; }
+  #log {
+    margin-top: 2rem;
+    white-space: pre-wrap;
+    font-size: 0.8rem;
+    color: #9c8d8a;
+    border-top: 1px solid rgba(236,229,226,0.14);
+    padding-top: 1rem;
+  }
+  a { color: #f6b8c4; }
+  .warn { color: #d94a68; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<h1>Mintar "Ecce Ancilla II" na Zora (Base)</h1>
+
+<p>Este botão prepara a transacção de <code>createCoin</code> e pede-te para a assinares
+na tua wallet (MetaMask, Coinbase Wallet, etc). Nada é submetido sem a tua confirmação
+explícita na extensão da wallet — esta página nunca vê nem guarda nenhuma chave privada.</p>
+
+<p class="warn">⚠️ Isto grava algo permanente e público na blockchain Base. Confirma o
+nome/símbolo abaixo antes de assinar.</p>
+
+<p><strong>Nome:</strong> Ecce Ancilla II<br>
+<strong>Símbolo:</strong> ECCE2<br>
+<strong>Rede:</strong> Base mainnet<br>
+<strong>Criador:</strong> a tua wallet ligada (deve corresponder a drpal2028.base.eth)</p>
+
+<button id="connect">1. Ligar wallet</button>
+<button id="mint" disabled>2. Preparar e assinar mint</button>
+
+<div id="log"></div>
+
+<script type="module">
+  import {
+    createCoinCall,
+    CreateConstants,
+    createMetadataBuilder,
+    createZoraUploaderForCreator,
+  } from "https://esm.sh/@zoralabs/coins-sdk@latest";
+  import { createWalletClient, custom } from "https://esm.sh/viem@latest";
+  import { base } from "https://esm.sh/viem@latest/chains";
+
+  const logEl = document.getElementById('log');
+  const connectBtn = document.getElementById('connect');
+  const mintBtn = document.getElementById('mint');
+
+  function log(msg) {
+    logEl.textContent += msg + '\n';
+    console.log(msg);
+  }
+
+  let account = null;
+  let walletClient = null;
+
+  connectBtn.addEventListener('click', async () => {
+    if (!window.ethereum) {
+      log('ERRO: não encontrei nenhuma wallet (MetaMask/Coinbase Wallet) instalada neste browser.');
+      return;
+    }
+    try {
+      walletClient = createWalletClient({
+        chain: base,
+        transport: custom(window.ethereum),
+      });
+      const [addr] = await walletClient.requestAddresses();
+      account = addr;
+      log('Wallet ligada: ' + account);
+      connectBtn.disabled = true;
+      mintBtn.disabled = false;
+    } catch (e) {
+      log('ERRO ao ligar wallet: ' + e.message);
+    }
+  });
+
+  mintBtn.addEventListener('click', async () => {
+    mintBtn.disabled = true;
+    try {
+      log('A carregar vídeo e imagem de capa...');
+      const [videoResp, imageResp] = await Promise.all([
+        fetch('https://btkdpjlltekssobfzdhu.supabase.co/storage/v1/object/public/media-publica/ecce-ancilla-ii/PB-CR1A-2_ecce-ancilla-ii_SHORT_9x16.mp4'),
+        fetch('https://drpalproject2028.github.io/ecce-ancilla-ii/poster.jpg'),
+      ]);
+      const videoBlob = await videoResp.blob();
+      const imageBlob = await imageResp.blob();
+      const videoFile = new File([videoBlob], 'ecce-ancilla-ii.mp4', { type: 'video/mp4' });
+      const imageFile = new File([imageBlob], 'poster.jpg', { type: 'image/jpeg' });
+
+      log('A construir e a enviar metadata para a Zora...');
+      const { createMetadataParameters } = await createMetadataBuilder()
+        .withName('Ecce Ancilla II')
+        .withSymbol('ECCE2')
+        .withDescription('PB-CR1A-2 · campo-espelho · Porto · MMXXVI. inter nos, in verbo / entre nós, na palavra — dois nós, um meio, a luz que nenhum dos dois tem sozinho. Página interactiva: https://drpalproject2028.github.io/ecce-ancilla-ii/')
+        .withImage(imageFile)
+        .withAnimationUrl(videoFile)
+        .upload(createZoraUploaderForCreator(account));
+
+      log('Metadata pronta: ' + createMetadataParameters.uri);
+      log('A preparar a transacção createCoin (Base mainnet)...');
+
+      const { calls, predictedCoinAddress } = await createCoinCall({
+        creator: account,
+        name: createMetadataParameters.name,
+        symbol: createMetadataParameters.symbol,
+        metadata: { type: 'RAW_URI', uri: createMetadataParameters.uri },
+        currency: CreateConstants.ContentCoinCurrencies.ZORA,
+        chainId: base.id,
+        startingMarketCap: CreateConstants.StartingMarketCaps.LOW,
+      });
+
+      log('Endereço previsto do coin: ' + predictedCoinAddress);
+      log('A pedir assinatura na tua wallet — confirma lá.');
+
+      const txHash = await walletClient.sendTransaction({
+        to: calls[0].to,
+        data: calls[0].data,
+        value: calls[0].value,
+        account,
+      });
+
+      log('Transacção enviada: ' + txHash);
+      log('Vê em: https://basescan.org/tx/' + txHash);
+      log('Coin (assim que confirmar): https://zora.co/coin/base:' + predictedCoinAddress);
+    } catch (e) {
+      log('ERRO: ' + (e && e.message ? e.message : String(e)));
+      mintBtn.disabled = false;
+    }
+  });
+</script>
+
+</body>
+</html>
