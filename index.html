@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ecce Ancilla II</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #060505;
+    --bg-vignette: #0c0808;
+    --rubi: #8b2942;
+    --rubi-bright: #d94a68;
+    --rubi-glow: #f6b8c4;
+    --ink: #ece5e2;
+    --ink-dim: #9c8d8a;
+    --hairline: rgba(236, 229, 226, 0.14);
+    --serif: 'Cormorant Garamond', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+    --mono: 'JetBrains Mono', 'SF Mono', 'Courier New', monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: var(--serif);
+  }
+
+  .stage {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 1920px;
+    height: 1080px;
+    transform-origin: center center;
+    background: radial-gradient(ellipse at center, var(--bg-vignette) 0%, var(--bg) 70%);
+  }
+
+  canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .divisa {
+    position: absolute;
+    left: 50%;
+    bottom: 12%;
+    transform: translateX(-50%);
+    text-align: center;
+    pointer-events: none;
+    opacity: 0;
+    animation: rise 3s ease-out 2.4s forwards;
+  }
+
+  .divisa .latin {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(1.1rem, 2.4vw, 1.7rem);
+    letter-spacing: 0.02em;
+    color: var(--ink);
+    text-shadow: 0 0 24px rgba(139, 41, 66, 0.55);
+  }
+
+  .divisa .pt {
+    margin-top: 0.35em;
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+
+  .ficha {
+    position: absolute;
+    left: 4%;
+    bottom: 4%;
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    line-height: 1.65;
+    color: var(--ink-dim);
+    letter-spacing: 0.03em;
+    opacity: 0;
+    animation: fade-in 2s ease-out 3.2s forwards;
+    max-width: 46ch;
+  }
+
+  .ficha .title {
+    color: var(--ink);
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 0.95rem;
+    letter-spacing: 0.01em;
+    display: block;
+    margin-bottom: 0.4em;
+  }
+
+  .ficha .code {
+    color: var(--rubi-bright);
+  }
+
+  .signature {
+    position: absolute;
+    right: 4%;
+    bottom: 4%;
+    font-family: var(--mono);
+    font-size: 0.58rem;
+    letter-spacing: 0.1em;
+    color: var(--ink-dim);
+    text-align: right;
+    line-height: 1.7;
+    opacity: 0;
+    animation: fade-in 2s ease-out 3.2s forwards;
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .divisa, .ficha, .signature { animation: none; opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <canvas id="field"></canvas>
+
+  <div class="divisa">
+    <div class="latin">inter nos, in verbo</div>
+    <div class="pt">entre nós, na palavra</div>
+  </div>
+
+  <div class="ficha">
+    <span class="title">Ecce Ancilla II</span>
+    <span class="code">PB&#8209;CR1A&#8209;2</span> &middot; campo&#8209;espelho &middot; Porto &middot; MMXXVI<br>
+    dois nós, um meio &mdash; a luz que nenhum dos dois tem sozinho
+  </div>
+
+  <div class="signature">
+    PAULO BRANCO<br>
+    FERRAMENTAS DE IA: CLAUDE (ANTHROPIC)<br>
+    A IA SERVE O HUMANO
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var canvas = document.getElementById('field');
+  var ctx = canvas.getContext('2d');
+  var stageEl = document.querySelector('.stage');
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  var params = new URLSearchParams(location.search);
+  var W = parseInt(params.get('w'), 10) || 1920;
+  var H = parseInt(params.get('h'), 10) || 1080;
+  stageEl.style.width = W + 'px';
+  stageEl.style.height = H + 'px';
+
+  function fitStage() {
+    var scale = Math.min(window.innerWidth / W, window.innerHeight / H);
+    stageEl.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
+  }
+
+  function resize() {
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = '#060505';
+    ctx.fillRect(0, 0, W, H);
+    fitStage();
+  }
+  window.addEventListener('resize', fitStage);
+
+  var perm = new Uint8Array(512);
+  (function seedPerm() {
+    var p = new Uint8Array(256);
+    for (var i = 0; i < 256; i++) p[i] = i;
+    var seed = 1337;
+    function rand() {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      return seed / 0x7fffffff;
+    }
+    for (var i = 255; i > 0; i--) {
+      var j = Math.floor(rand() * (i + 1));
+      var t = p[i]; p[i] = p[j]; p[j] = t;
+    }
+    for (var i = 0; i < 512; i++) perm[i] = p[i & 255];
+  })();
+  function fade(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+  function lerp(t, a, b) { return a + t * (b - a); }
+  function grad(hash, x, y) {
+    var h = hash & 7;
+    var u = h < 4 ? x : y;
+    var v = h < 4 ? y : x;
+    return ((h & 1) ? -u : u) + ((h & 2) ? -2 * v : 2 * v);
+  }
+  function perlin2(x, y) {
+    var X = Math.floor(x) & 255, Y = Math.floor(y) & 255;
+    x -= Math.floor(x); y -= Math.floor(y);
+    var u = fade(x), v = fade(y);
+    var A = perm[X] + Y, B = perm[X + 1] + Y;
+    return lerp(v,
+      lerp(u, grad(perm[A], x, y), grad(perm[B], x - 1, y)),
+      lerp(u, grad(perm[A + 1], x, y - 1), grad(perm[B + 1], x - 1, y - 1))
+    );
+  }
+  function fbm(x, y, octaves) {
+    var sum = 0, amp = 0.5, freq = 1;
+    for (var i = 0; i < octaves; i++) {
+      sum += amp * perlin2(x * freq, y * freq);
+      amp *= 0.5;
+      freq *= 2.05;
+    }
+    return sum;
+  }
+
+  var particles = [];
+  var N = 2600;
+  var t = 0;
+  var settled = false;
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function attractors() {
+    var ax = W * 0.32, bx = W * 0.68, y = H * 0.46;
+    return [
+      { x: ax, y: y, sign: 1 },
+      { x: bx, y: y, sign: -1 }
+    ];
+  }
+
+  function seedParticles() {
+    particles = [];
+    for (var i = 0; i < N; i++) {
+      particles.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        vx: 0,
+        vy: 0,
+        life: Math.random() * 240,
+        maxLife: 180 + Math.random() * 260,
+        near: Math.random() < 0.55
+      });
+    }
+  }
+
+  function respawn(p) {
+    var A = attractors();
+    if (p.near) {
+      var src = A[Math.random() < 0.5 ? 0 : 1];
+      var ang = Math.random() * Math.PI * 2;
+      var r = Math.random() * Math.min(W, H) * 0.06;
+      p.x = src.x + Math.cos(ang) * r;
+      p.y = src.y + Math.sin(ang) * r;
+    } else {
+      p.x = Math.random() * W;
+      p.y = Math.random() * H;
+    }
+    p.vx = 0; p.vy = 0;
+    p.life = 0;
+    p.maxLife = 180 + Math.random() * 260;
+  }
+
+  function step() {
+    var A = attractors();
+    var scale = 0.0022;
+    var midx = (A[0].x + A[1].x) / 2;
+
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = 'rgba(6,5,5,0.022)';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.globalCompositeOperation = 'lighter';
+
+    for (var i = 0; i < particles.length; i++) {
+      var p = particles[i];
+
+      var n = fbm(p.x * scale, p.y * scale + t * 0.06, 4);
+      var angle = n * Math.PI * 2.4;
+      var flowX = Math.cos(angle), flowY = Math.sin(angle);
+
+      var pull = 0;
+      for (var k = 0; k < A.length; k++) {
+        var dx = A[k].x - p.x, dy = A[k].y - p.y;
+        var d2 = dx * dx + dy * dy + 900;
+        var f = 5200 / d2;
+        pull += f;
+        p.vx += dx * f * 0.0022;
+        p.vy += dy * f * 0.0022;
+      }
+
+      p.vx += flowX * 0.16;
+      p.vy += flowY * 0.16;
+      p.vx *= 0.94;
+      p.vy *= 0.94;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.life++;
+
+      var distToMid = Math.abs(p.x - midx) / (W * 0.5);
+      var betweenBoost = Math.max(0, 1 - distToMid) * 0.8 + 0.2;
+      var speed = Math.min(1, Math.sqrt(p.vx * p.vx + p.vy * p.vy) / 3);
+      var alpha = (0.11 + speed * 0.16) * betweenBoost;
+
+      var col;
+      if (betweenBoost > 0.75) {
+        col = '246,184,196';
+      } else if (betweenBoost > 0.4) {
+        col = '217,74,104';
+      } else {
+        col = '139,41,66';
+      }
+
+      ctx.fillStyle = 'rgba(' + col + ',' + alpha.toFixed(3) + ')';
+      ctx.fillRect(p.x, p.y, 1.4, 1.4);
+
+      if (p.life > p.maxLife || p.x < -20 || p.x > W + 20 || p.y < -20 || p.y > H + 20) {
+        respawn(p);
+      }
+    }
+
+    t += 0.01;
+  }
+
+  var STEP_MS = 1000 / 60;
+
+  function startWorkerClock() {
+    var workerSrc = 'setInterval(function(){ postMessage(1); }, ' + STEP_MS + ');';
+    var blob = new Blob([workerSrc], { type: 'application/javascript' });
+    var worker = new Worker(URL.createObjectURL(blob));
+    worker.onmessage = function () { step(); };
+    return worker;
+  }
+
+  function boot() {
+    resize();
+    seedParticles();
+    if (reduceMotion) {
+      for (var i = 0; i < 900; i++) step();
+      settled = true;
+    } else if (typeof Worker !== 'undefined') {
+      startWorkerClock();
+    } else {
+      setInterval(step, STEP_MS);
+    }
+  }
+
+  boot();
+})();
+</script>
+
+</body>
+</html>
