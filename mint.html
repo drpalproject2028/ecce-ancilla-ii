@@ -67,9 +67,9 @@ nome/símbolo abaixo antes de assinar.</p>
     createMetadataBuilder,
     createZoraUploaderForCreator,
     setApiKey,
-  } from "https://esm.sh/@zoralabs/coins-sdk@latest";
-  import { createWalletClient, custom } from "https://esm.sh/viem@latest";
-  import { base } from "https://esm.sh/viem@latest/chains";
+  } from "https://esm.sh/@zoralabs/coins-sdk@0.8.0?deps=viem@2.53.1";
+  import { createWalletClient, custom } from "https://esm.sh/viem@2.53.1";
+  import { base } from "https://esm.sh/viem@2.53.1/chains";
 
   setApiKey("zora_api_928822b9f736aa4a01ba5c3ed1f915f03c329bf4c2c94fe90f66f5b5fd0f9dda");
 
@@ -119,7 +119,7 @@ nome/símbolo abaixo antes de assinar.</p>
       const imageFile = new File([imageBlob], 'poster.jpg', { type: 'image/jpeg' });
 
       log('A construir e a enviar metadata para a Zora...');
-      const { url, createMetadataParameters } = await createMetadataBuilder()
+      const uploadResult = await createMetadataBuilder()
         .withName('Ecce Ancilla II')
         .withSymbol('ECCE2')
         .withDescription('PB-CR1A-2 · campo-espelho · Porto · MMXXVI. inter nos, in verbo / entre nós, na palavra — dois nós, um meio, a luz que nenhum dos dois tem sozinho. Página interactiva: https://drpalproject2028.github.io/ecce-ancilla-ii/')
@@ -127,6 +127,8 @@ nome/símbolo abaixo antes de assinar.</p>
         .withMedia(videoFile)
         .upload(createZoraUploaderForCreator(account));
 
+      const { url, createMetadataParameters } = uploadResult;
+      log('Resultado do upload (debug): ' + JSON.stringify(uploadResult));
       log('Metadata pronta: ' + url);
       log('A preparar a transacção createCoin (Base mainnet)...');
 
