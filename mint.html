@@ -143,6 +143,16 @@ nome/símbolo abaixo antes de assinar.</p>
       });
 
       log('Endereço previsto do coin: ' + predictedCoinAddress);
+      log('A pedir à wallet para mudar para a rede Base — confirma isso primeiro.');
+
+      try {
+        await walletClient.switchChain({ id: base.id });
+        log('Rede mudada para Base com sucesso.');
+      } catch (switchErr) {
+        log('AVISO: não consegui pedir a troca de rede automaticamente (' + switchErr.message + '). Muda manualmente para Base na wallet e tenta de novo.');
+        throw switchErr;
+      }
+
       log('A pedir assinatura na tua wallet — confirma lá.');
 
       const txHash = await walletClient.sendTransaction({
