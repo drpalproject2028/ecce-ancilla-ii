@@ -66,9 +66,12 @@ nome/símbolo abaixo antes de assinar.</p>
     CreateConstants,
     createMetadataBuilder,
     createZoraUploaderForCreator,
+    setApiKey,
   } from "https://esm.sh/@zoralabs/coins-sdk@latest";
   import { createWalletClient, custom } from "https://esm.sh/viem@latest";
   import { base } from "https://esm.sh/viem@latest/chains";
+
+  setApiKey("zora_api_928822b9f736aa4a01ba5c3ed1f915f03c329bf4c2c94fe90f66f5b5fd0f9dda");
 
   const logEl = document.getElementById('log');
   const connectBtn = document.getElementById('connect');
