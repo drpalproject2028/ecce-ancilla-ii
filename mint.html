@@ -119,7 +119,7 @@ nome/símbolo abaixo antes de assinar.</p>
       const imageFile = new File([imageBlob], 'poster.jpg', { type: 'image/jpeg' });
 
       log('A construir e a enviar metadata para a Zora...');
-      const { createMetadataParameters } = await createMetadataBuilder()
+      const { url, createMetadataParameters } = await createMetadataBuilder()
         .withName('Ecce Ancilla II')
         .withSymbol('ECCE2')
         .withDescription('PB-CR1A-2 · campo-espelho · Porto · MMXXVI. inter nos, in verbo / entre nós, na palavra — dois nós, um meio, a luz que nenhum dos dois tem sozinho. Página interactiva: https://drpalproject2028.github.io/ecce-ancilla-ii/')
@@ -127,14 +127,14 @@ nome/símbolo abaixo antes de assinar.</p>
         .withMedia(videoFile)
         .upload(createZoraUploaderForCreator(account));
 
-      log('Metadata pronta: ' + createMetadataParameters.uri);
+      log('Metadata pronta: ' + url);
       log('A preparar a transacção createCoin (Base mainnet)...');
 
       const { calls, predictedCoinAddress } = await createCoinCall({
         creator: account,
         name: createMetadataParameters.name,
         symbol: createMetadataParameters.symbol,
-        metadata: { type: 'RAW_URI', uri: createMetadataParameters.uri },
+        metadata: createMetadataParameters.metadata,
         currency: CreateConstants.ContentCoinCurrencies.ZORA,
         chainId: base.id,
         startingMarketCap: CreateConstants.StartingMarketCaps.LOW,
